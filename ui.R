@@ -44,6 +44,7 @@ mytheme <- bs_theme(version = 5,
                             )
                    ),
                    tabPanel(title = 'Charts',
+                   ),
+                   tabPanel(title = 'tab2',
                    )
-
   )
