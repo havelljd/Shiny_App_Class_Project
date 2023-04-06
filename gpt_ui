@@ -1,89 +1,70 @@
 # I haven't looked at this too closely -- it's just what chatgpt4 outputed when i put in the assignment
 #feel free to delete or whatever if not helpful
  
+library(tidyverse)
+library(shiny)
+library(shinythemes)
+library(shinydashboard)
+library(plotly)
+library(bslib)
  
- library(shiny)
-  library(shinydashboard)
-  
-  # Define the UI for the dashboard
-  ui <- dashboardPage(
-    dashboardHeader(title = "My Shiny Dashboard"),
-    dashboardSidebar(
-      sidebarMenu(
-        menuItem("Landing Page", tabName = "landing", icon = icon("home")),
-        menuItem("Competition Analysis", tabName = "competition", icon = icon("chart-bar")),
-        menuItem("Trends Analysis", tabName = "trends", icon = icon("chart-line"))
+ 
+# Set up the bootstrap theme
+mytheme <- bs_theme(version = 5, bootswatch = 'sandstone', bg = '#000', fg = '#FFF')
+
+# Define the UI
+ui <- navbarPage(
+  title = 'Patent Analytics',   # Dashboard title
+  theme = mytheme,              # Apply the custom theme
+  # Define the landing page
+  tabPanel(
+    title = 'Home',             # Name the landing page
+    fluidRow(
+      column(
+        width = 12,
+        h3('Welcome to the Patent Analytics Dashboard!'),
+        p('This dashboard provides an analysis of patent data. Please select one of the analysis pages from the menu above.')
       )
-    ),
-    dashboardBody(
-      tabItems(
-        # Landing Page content
-        tabItem(tabName = "landing",
-                h2("Welcome to the Shiny Dashboard!"),
-                p("Navigate to the analysis pages using the sidebar menu.")
-        ),
-        
-        # Competition Analysis page content
-        tabItem(tabName = "competition",
-                fluidRow(
-                  column(4,
-                         wellPanel(
-                           textInput("comp_input1", "Input 1:", ""),
-                           textInput("comp_input2", "Input 2:", ""),
-                           textInput("comp_input3", "Input 3:", ""),
-                           actionButton("comp_analyze", "Analyze")
-                         )
-                  ),
-                  column(8,
-                         box(
-                           title = "Competition Analysis Chart",
-                           width = NULL,
-                           status = "primary",
-                           solidHeader = TRUE,
-                           plotOutput("comp_chart", height = "300px")
-                         )
-                  )
-                )
-        ),
-        
-        # Trends Analysis page content
-        tabItem(tabName = "trends",
-                fluidRow(
-                  column(4,
-                         wellPanel(
-                           textInput("trends_input1", "Input 1:", ""),
-                           textInput("trends_input2", "Input 2:", ""),
-                           textInput("trends_input3", "Input 3:", ""),
-                           actionButton("trends_analyze", "Analyze")
-                         )
-                  ),
-                  column(8,
-                         box(
-                           title = "Trends Analysis Chart",
-                           width = NULL,
-                           status = "primary",
-                           solidHeader = TRUE,
-                           plotOutput("trends_chart", height = "300px")
-                         )
-                  )
-                )
-        )
+    )
+  ),
+  # Define the competition analysis page
+  tabPanel(
+    title = 'Competition Analysis',   # Name the analysis page
+    fluidRow(
+      column(
+        width = 4,
+        h4('Enter your search criteria:'),
+        textInput(inputId = 'search_term', label = 'Search Term:', value = ''),
+        textInput(inputId = 'location', label = 'Location:', value = ''),
+        textInput(inputId = 'industry', label = 'Industry:', value = ''),
+        actionButton(inputId = 'run_analysis', label = 'Run Analysis', class = 'btn-primary')
+      ),
+      column(
+        width = 8,
+        h4('Results:'),
+        plotOutput(outputId = 'competition_plot', height = '500px')
+      )
+    )
+  ),
+  # Define the trends analysis page
+  tabPanel(
+    title = 'Trends Analysis',    # Name the analysis page
+    fluidRow(
+      column(
+        width = 4,
+        h4('Enter your search criteria:'),
+        textInput(inputId = 'search_term', label = 'Search Term:', value = ''),
+        textInput(inputId = 'location', label = 'Location:', value = ''),
+        textInput(inputId = 'industry', label = 'Industry:', value = ''),
+        actionButton(inputId = 'run_analysis', label = 'Run Analysis', class = 'btn-primary')
+      ),
+      column(
+        width = 8,
+        h4('Results:'),
+        plotOutput(outputId = 'trends_plot', height = '500px')
       )
     )
   )
-  
-  # Define the server logic
-  server <- function(input, output, session) {
-    # Competition Analysis chart output
-    output$comp_chart <- renderPlot({
-      # Placeholder for the chart generation code
-    })
-    
-    # Trends Analysis chart output
-    output$trends_chart <- renderPlot({
-      # Placeholder for the chart generation code
-    })
-  }
-  
-  # Run the Shiny app
-  shinyApp(ui, server)
+)
+
+
