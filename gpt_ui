@@ -10,7 +10,7 @@ library(bslib)
  
  
 # Set up the bootstrap theme
-mytheme <- bs_theme(version = 5, bootswatch = 'sandstone', bg = '#000', fg = '#FFF')
+mytheme <- bs_theme(version = 5, bootswatch = 'sandstone')
 
 # Define the UI
 ui <- navbarPage(
