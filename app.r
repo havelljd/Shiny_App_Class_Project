@@ -14,15 +14,20 @@ library(bslib)
 
 # patent codes ------------------------------------------------------------
 
-#change to patent codes once uploaded....
-example_data <- data.frame(
-  patent_codes = c("Code1", "Code2", "Code3", "Code3", "Code2", "Code4", "Code5"),
-  some_values = 1:6
-)
 
-# Extract unique patent codes from the dataset
-unique_patent_codes <- unique(example_data$patent_codes)
+#use fake patent codes until they're uploaded
+# example_data <- data.frame(
+#   patent_codes = c("Code1", "Code2", "Code3", "Code3", "Code2", "Code4", "Code5"),
+#   some_values = 1:6
+# )
+# 
+# # Extract unique patent codes from the dataset
+# unique_patent_codes <- unique(example_data$patent_codes)
 
+
+# upload the real cpc codes -- probably need to change file path to be transferable
+load("~/Desktop/strat/Module3/shiny/unique_cpc_group.Rdata")
+unique_patent_codes <- unique(unique_cpc_group)
 
 
 
