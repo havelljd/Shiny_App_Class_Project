@@ -29,6 +29,16 @@ library(bslib)
 load("~/Desktop/strat/Module3/shiny/unique_cpc_group.Rdata")
 unique_patent_codes <- unique(unique_cpc_group)
 
+  # Assemble the dataframe 
+  # Tip: Always be aware of what a "row" is when merging, watch the row count of the resulting data frame to make sure it does what you expect
+    #cpc$patent_id <- as.character(cpc$patent_id)
+    # Filter the cpc codes
+    #dt <- cpc %>% filter(grepl(pattern = 'A61G5/',x = cpc$cpc_group,ignore.case = T))
+    # merge with patents
+    #dt <- merge(dt,patent,by = 'patent_id')
+    # merge with assignee
+    #dt <- merge(dt,assignee,by = 'patent_id') # why is this dropping? no assignee?
+
 
 
 # ui ----------------------------------------------------------------------
