@@ -139,15 +139,16 @@ server <- function(input,output,session) {
     selected_codes$competition <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "))
     selected_codes$trends <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "))
     
-    #filter the cpc codes
-    #dt <- cpc %>%  filter(grepl(pattern = paste(input$market_cpcs_input, sep = "", collapse = "|", x = cpc$cpc_group,ignore.case = T))) ## change market_cpcs_input (david) to patent_codes?
-    #bring in smaller merged data 
+     #bring in smaller merged data 
     dt <- small_data
+    
     ## to use when we have larger data
+    #dt <- cpc %>%  filter(grepl(pattern = paste(input$market_cpcs_input, sep = "", collapse = "|", x = cpc$cpc_group,ignore.case = T))) ## change market_cpcs_input (david) to patent_codes?
     # #merge with patents
     # dt <- merge(dt, patent, by = "patent_id")
     # #merge with assignee
     # dt <- merge(dt, assignee, by = "patent_id")
+    
     
 
     ##paste market cpcs...
