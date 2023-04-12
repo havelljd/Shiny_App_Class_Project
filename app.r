@@ -128,10 +128,10 @@ server <- function(input,output,session) {
   
   selected_codes <- reactiveValues(competition = "", trends = "")
   
-
   
   ##David's notes
   competition <- reactiveValues(dt = data.frame(), plot = plotly_empty())
+  trends <- reactiveValues(plot = plotly_empty())
   
   
   observeEvent(input$generate_competitive_positioning, {
@@ -149,12 +149,10 @@ server <- function(input,output,session) {
     # dt <- merge(dt, patent, by = "patent_id")
     # #merge with assignee
     # dt <- merge(dt, assignee, by = "patent_id")
+    #probably merge in location data here too, by "location_id"
     
 
-    ##paste market cpcs...
-
-    #copy in other competitive positioning code
-    
+ ##### copy in other competitive positioning code ######
     
     # Get top 10 companies   (their # of patents)
     totals <- dt %>% 
@@ -164,8 +162,6 @@ server <- function(input,output,session) {
       arrange(desc(total)) %>% 
       slice(1:10)
     #totals <- totals[order(totals$total,decreasing = T),] %>% slice(1:10)  #same as last two rows above
-    
-    
     
     
     ### Calculate 5 year CAGR for top 10 companies
@@ -207,9 +203,55 @@ server <- function(input,output,session) {
     
     
 
-    competition$dt <- head(dt)
-    competition$dt <- totals ## for when we put in competition trends
+    #competition$dt <- head(dt)
+    competition$dt <- totals 
     output$competition_dt <- renderDataTable({competition$dt})
+    
+    
+    
+##### technology trends. #######
+    
+    
+    keep <- dt %>% 
+      filter(grepl(pattern = selected_patent_codes, x = dt$cpc_group,ignore.case = T)) %>%
+      select(patent_id) %>%
+      unique()
+    
+
+    # tidy up the location data
+    dt$state_fips <- str_pad(string = dt$state_fips,width = 2,side = 'left', pad = '0')
+    dt$county_fips <- str_pad(string = dt$county_fips,width = 3,side = 'left', pad = '0')
+    dt$fips <- paste(dt$state_fips,dt$county_fips,sep = '')
+    
+    
+    dt_state <- dt %>% group_by(disambig_state,state_fips) %>% summarise(n=uniqueN(patent_id))
+    
+    l <- list(color = toRGB("white"), width = 2)
+    g <- list(
+      scope = 'usa',
+      projection = list(type = 'albers usa'),
+      showlakes = TRUE,
+      lakecolor = toRGB('white')
+    )
+    fig <- plot_geo(dt_state, locationmode = 'USA-states')
+    fig <- fig %>% add_trace(
+      z = ~n, 
+      text = ~disambig_state, 
+      locations = ~disambig_state,
+      color = ~n, 
+      colors = 'Blues'
+    )
+    fig <- fig %>% colorbar(title = "Count of patents")
+    fig <- fig %>% layout(
+      title = 'Cyber security patents granted by State', #change title?
+      geo = g
+    )
+    trends$plot <- fig # Added this line
+    
+    
+    
+    
+    
     
   })
   
@@ -224,6 +266,10 @@ server <- function(input,output,session) {
   })
 
   
+  
+  output$trends_plot <- renderPlotly({ 
+    trends$plot
+  })  
   
   
 }
