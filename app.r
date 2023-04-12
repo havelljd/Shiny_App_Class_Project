@@ -88,9 +88,9 @@ ui <- navbarPage(
         width = 8,
         h4('Results:'),
         textOutput(outputId = 'selected_patent_codes'),
-        plotOutput(outputId = 'competition_plot', height = '500px'), #for when we add a plot
-        h4('Outputs'), 
-        textOutput(outputId = "text_labels_output"), ## from david; this isn't anywhere else in code rn
+        #plotOutput(outputId = 'competition_plot', height = '500px'), #for when we add a plot
+        # h4('Outputs'), 
+        #textOutput(outputId = "text_labels_output"), ## from david; this isn't anywhere else in code rn
         DTOutput(outputId = "competition_dt")
       )
     )
@@ -139,7 +139,8 @@ server <- function(input,output,session) {
     selected_codes$competition <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "))
     selected_codes$trends <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "))
     
-     #bring in smaller merged data 
+    #filter the cpc codes
+    #bring in smaller merged data 
     dt <- small_data
     
     ## to use when we have larger data
@@ -149,15 +150,65 @@ server <- function(input,output,session) {
     # #merge with assignee
     # dt <- merge(dt, assignee, by = "patent_id")
     
-    
 
     ##paste market cpcs...
 
     #copy in other competitive positioning code
     
+    
+    # Get top 10 companies   (their # of patents)
+    totals <- dt %>% 
+      filter(disambig_assignee_organization!='') %>% #drop those with no name
+      group_by(disambig_assignee_organization) %>% 
+      summarize(total=uniqueN(patent_id))  %>% #count unique, doesn't count duplicates
+      arrange(desc(total)) %>% 
+      slice(1:10)
+    #totals <- totals[order(totals$total,decreasing = T),] %>% slice(1:10)  #same as last two rows above
+    
+    
+    
+    
+    ### Calculate 5 year CAGR for top 10 companies
+    #cagr = compound annual growth rate. basically (new rate/old rate)
+    #create dataframe wiht all combinatinos of top 10 companies and years we want
+    cagr <- data.frame(expand.grid(year=2017:2021,disambig_assignee_organization=totals$disambig_assignee_organization))
+    #expand grid gives all combinations of two variables
+    
+    temp <- dt %>% 
+      filter(disambig_assignee_organization %in% totals$disambig_assignee_organization) %>% 
+      group_by(year=year(patent_date),disambig_assignee_organization) %>% 
+      summarise(n=uniqueN(patent_id))
+    
+    cagr <- merge(cagr,temp,by = c('year','disambig_assignee_organization'),all.x = T)
+    rm(temp)
+    cagr[is.na(cagr)] <- 0 #replace missing with 0?
+    
+    cagr <- cagr %>%
+      group_by(disambig_assignee_organization) %>%
+      mutate(cum_cnt = cumsum(n)) %>%  # make sure your date are sorted correctly before calculating the cumulative :)
+      filter(year %in% c(2017,2021)) %>%
+      pivot_wider(id_cols = disambig_assignee_organization,names_from = year,values_from = cum_cnt)
+    cagr$cagr_2017_2021 <- round(((cagr$`2021`/cagr$`2017`)^(1/5))-1,3)
+    
+    
+    # Calculate avg claim count for top 10 companies
+    #more claims is better
+    claims <- dt %>% 
+      filter(disambig_assignee_organization %in% totals$disambig_assignee_organization) %>%
+      select(disambig_assignee_organization,patent_id,num_claims) %>%
+      unique() %>%
+      group_by(disambig_assignee_organization) %>%
+      summarise
+    
+    # Combine and save file
+    totals <- merge(totals,cagr,by = 'disambig_assignee_organization')
+    totals <- merge(totals,claims,by = 'disambig_assignee_organization')
+    totals <- totals %>% select(-`2017`,-`2021`)
+    
+    
 
-    competition$dt <- head(dt) #this gives an errors saying competition not found when run outside of the app
-    #competition$dt <- totals ## for when we put in competition trends
+    competition$dt <- head(dt)
+    competition$dt <- totals ## for when we put in competition trends
     output$competition_dt <- renderDataTable({competition$dt})
     
   })
