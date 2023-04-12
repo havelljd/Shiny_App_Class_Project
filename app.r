@@ -47,17 +47,6 @@ small_data <- fread("~/Desktop/strat/Module3/Data/small_data.csv")
 # location <- fread("~/Desktop/strat/Module3/Data/g_location_disambiguated_2012_2021.csv")
 
 
-#david's data
-# load('data/unique_cpc_group.Rdata')
-# assignee <- read_feather('./g_assignee_disambiguated_2012_2021.feather')
-# location <- read_feather('./g_location_disambiguated_2012_2021.feather')
-# patent <- read_feather('./g_patent_2012_2021.feather')
-# cpc <- fread('data/g_cpc_current_2012_2021.csv')
-# cpc$patent_id <- as.character(cpc$patent_id)
-
-
- 
-
 
 # ui ----------------------------------------------------------------------
 
@@ -151,7 +140,7 @@ server <- function(input,output,session) {
     selected_codes$trends <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "))
     
     #filter the cpc codes
-    dt <- cpc %>%  filter(grepl(pattern = paste(input$market_cpcs_input, sep = "", collapse = "|", x = cpc$cpc_group,ignore.case = T))) ## change market_cpcs_input (david) to patent_codes?
+    #dt <- cpc %>%  filter(grepl(pattern = paste(input$market_cpcs_input, sep = "", collapse = "|", x = cpc$cpc_group,ignore.case = T))) ## change market_cpcs_input (david) to patent_codes?
     #bring in smaller merged data 
     dt <- small_data
     ## to use when we have larger data
@@ -182,9 +171,6 @@ server <- function(input,output,session) {
     selected_codes$trends
   })
 
-  
-  
-  
   
   
   
