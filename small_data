@@ -1,7 +1,6 @@
 ### filter data
 
 library(feather)
-
 library(tidyverse)
 library(data.table)
 
@@ -11,6 +10,7 @@ setwd("~/Desktop/strat/Module3/Data")
 patent <- fread("~/Desktop/strat/Module3/Data/g_patent_2012_2021.csv")
 assignee <- fread("~/Desktop/strat/Module3/Data/g_assignee_disambiguated_2012_2021.csv")
 cpc <- fread("~/Desktop/strat/Module3/Data/g_cpc_current_2012_2021.csv")
+location <- fread("~/Desktop/strat/Module3/Data/g_location_disambiguated_2012_2021.csv")
 
 # Convert patent_id to character
 cpc$patent_id <- as.character(cpc$patent_id)
@@ -25,6 +25,7 @@ dt <-
 
 # Merge with patents and assignee
 dt <- merge(dt, patent, by = 'patent_id')
-dt <- merge(dt, assignee, by = 'patent_id')
+dt <- merge(dt, assignee, by = 'patent_id') 
+dt <- merge(dt, location, by = 'location_id')
 
 fwrite(dt, "small_data.csv")
