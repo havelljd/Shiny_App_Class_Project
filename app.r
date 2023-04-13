@@ -104,7 +104,8 @@ ui <- navbarPage(
       column(
         width = 4,
         h4('Enter your search criteria:'),
-        selectInput(inputId = 'market_cpcs_input', label = 'Patent Codes:', choices = unique_patent_codes, multiple = TRUE),         textInput(inputId = 'location', label = 'Location:', value = ''),
+        # selectInput(inputId = 'market_cpcs_input', label = 'Patent Codes:', choices = unique_patent_codes, multiple = TRUE),         textInput(inputId = 'location', label = 'Location:', value = ''),
+        selectInput(inputId = 'trends_market_cpcs_input', label = 'Patent Codes:', choices = unique_patent_codes, multiple = TRUE),
         textInput(inputId = 'industry', label = 'Industry:', value = ''),
         actionButton(inputId = 'generate_competitive_positioning', label = 'Run Analysis', class = 'btn-primary')
       ),
@@ -112,7 +113,8 @@ ui <- navbarPage(
         width = 8,
         h4('Results:'),
         textOutput(outputId = 'selected_trends_patent_codes'),
-        plotOutput(outputId = 'trends_plot', height = '500px')
+        #plotOutput(outputId = 'trends_plot', height = '500px')
+        plotlyOutput(outputId = 'trends_plot', height = '500px')
       )
     )
   )
@@ -137,7 +139,9 @@ server <- function(input,output,session) {
   observeEvent(input$generate_competitive_positioning, {
     #select codes
     selected_codes$competition <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "))
-    selected_codes$trends <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "))
+    #selected_codes$trends <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "))
+    selected_codes$trends <- paste("Selected patent codes:", paste(input$trends_market_cpcs_input, collapse = ", "))
+    
     
     #filter the cpc codes
     #bring in smaller merged data 
@@ -213,7 +217,8 @@ server <- function(input,output,session) {
     
     
     keep <- dt %>% 
-      filter(grepl(pattern = selected_patent_codes, x = dt$cpc_group,ignore.case = T)) %>%
+      #filter(grepl(pattern = selected_patent_codes, x = dt$cpc_group,ignore.case = T)) %>%
+      filter(grepl(pattern = selected_codes$trends, x = dt$cpc_group,ignore.case = T)) %>% 
       select(patent_id) %>%
       unique()
     
