@@ -12,6 +12,7 @@ library(data.table)
 library(feather)
 
 library(DT)
+library(stringr)
 
 
 
@@ -274,7 +275,8 @@ server <- function(input,output,session) {
     ml_keywords <- c('machine learning', 'deep learning', 'statistical learning','neural network')
 
 
-    dt$ml <- ifelse(grepl(pattern = paste(ml_cpcs,collapse = '|',sep = ''),x = dt$cpc_group,ignore.case = T),1,0)
+    dt <- small_data
+    dt$ml <- ifelse(str_detect(string = dt$cpc_group, pattern = str_c(ml_cpcs, collapse = "|", ignore_case = TRUE)), 1, 0)
     table(dt$ml)
     head(dt$cpc_group)
     dt$ml <- ifelse(grepl(pattern = paste(ml_keywords,collapse = '|',sep = ''),x = dt$patent_title,ignore.case = T),1,dt$ml)
