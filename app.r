@@ -5,56 +5,38 @@ library(shinythemes)
 library(shinydashboard)
 library(plotly)
 library(bslib)
-
 library(httr)
 library(tidyverse)
 library(data.table)
 library(feather)
-
 library(DT)
-library(stringr)
 
 
 
-# patent codes ------------------------------------------------------------
-
-#change to patent codes once uploaded....
-# example_data <- data.frame(
-#   patent_codes = c("Code1", "Code2", "Code3", "Code3", "Code2", "Code4", "Code5"),
-#   some_values = 1:6
-# )
-# 
-# # Extract unique patent codes from the dataset
-# unique_patent_codes <- unique(example_data$patent_codes)
+# global ------------------------------------------------------------------
 
 
-# upload the real cpc codes -- probably need to change file path to be transferable
+
 load("~/Desktop/strat/Module3/shiny/unique_cpc_group.Rdata")
 unique_patent_codes <- unique(unique_cpc_group)
 unique_patent_codes <- unique_patent_codes[grepl("B60L|Y02", unique_patent_codes, ignore.case = TRUE)]
-## delete when we want full data, not filtered
 
 
 
 #upload smaller data for testing
 small_data <- fread("~/Desktop/strat/Module3/Data/small_data.csv")
 
-#load patent data ### set working directory
-# patent <- fread("~/Desktop/strat/Module3/Data/g_patent_2012_2021.csv")
-# application<- fread("~/Desktop/strat/Module3/Data/g_application_2012_2021.csv")
-# assignee <- fread("~/Desktop/strat/Module3/Data/g_assignee_disambiguated_2012_2021.csv")
-# term <-  fread("~/Desktop/strat/Module3/Data/g_us_term_of_grant_2012_2021.csv")
-# cpc <- fread("~/Desktop/strat/Module3/Data/g_cpc_current_2012_2021.csv")
-# location <- fread("~/Desktop/strat/Module3/Data/g_location_disambiguated_2012_2021.csv")
-
+dt <- small_data
 
 
 # ui ----------------------------------------------------------------------
 
+
 # Set up the bootstrap theme
 mytheme <- bs_theme(version = 5, bootswatch = 'sandstone')
 
-# Define the UI
+
+# Define UI
 ui <- navbarPage(
   title = 'Patent Analytics',   # Dashboard title
   theme = mytheme,              # Apply the custom theme
@@ -70,8 +52,6 @@ ui <- navbarPage(
     )
   ),
   
-#i think when we use "patent_codes" it is when david used "market_cpcs_input" -- so i chnaged to his for consistency
-    
   # Define the competition analysis page
   tabPanel(
     title = 'Competition Analysis',   # Name the analysis page
@@ -80,8 +60,7 @@ ui <- navbarPage(
         width = 4,
         h4('Enter your search criteria:'),
         selectInput(inputId = 'market_cpcs_input', label = 'Patent Codes:', choices = unique_patent_codes, multiple = TRUE),
-        textInput(inputId = 'location', label = 'Location:', value = ''),
-        textInput(inputId = 'industry', label = 'Industry:', value = ''),
+        selectInput(inputId = 'submarket_comp_input', label = 'Submarket Codes:', choices = unique_patent_codes, multiple = TRUE),
         #textAreaInput(inputId = 'submarket_labels_input', label = "submarket labels", choices = unique_patent_codes, multiple = TRUE), 
         actionButton(inputId = 'generate_competitive_positioning', label = 'Run Analysis', class = 'btn-primary')
       ),
@@ -107,7 +86,7 @@ ui <- navbarPage(
         h4('Enter your search criteria:'),
         # selectInput(inputId = 'market_cpcs_input', label = 'Patent Codes:', choices = unique_patent_codes, multiple = TRUE),         textInput(inputId = 'location', label = 'Location:', value = ''),
         selectInput(inputId = 'trends_market_cpcs_input', label = 'Patent Codes:', choices = unique_patent_codes, multiple = TRUE),
-        textInput(inputId = 'industry', label = 'Industry:', value = ''),
+        selectInput(inputId = 'submarket_trends_input', label = 'Sub-Patent Codes:', choices = unique_patent_codes, multiple = TRUE),
         actionButton(inputId = 'generate_tech_trends', label = 'Run Analysis', class = 'btn-primary')
       ),
       column(
@@ -119,8 +98,10 @@ ui <- navbarPage(
       )
     )
   )
-)
+) 
 
+
+  
 
 
 
@@ -130,6 +111,7 @@ server <- function(input,output,session) {
   
   
   selected_codes <- reactiveValues(competition = "", trends = "")
+  selected_subcode <- reactiveValues(competition = "", trends = "")
   
   competition <- reactiveValues(dt = data.frame(), plot = plotly_empty())
   trends <- reactiveValues(plot = plotly_empty())
@@ -138,11 +120,14 @@ server <- function(input,output,session) {
   # OBSERVE EVENT -- competetive positioning
   observeEvent(input$generate_competitive_positioning, {
     #select codes
-    selected_codes$competition <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "))
-
+    selected_codes$competition <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "), paste(input$submarket_comp_input, collapse = ", "))
+    
+    #we might need something to use that has both the main and sub codes to filter by
+    #filtered_codes <- c(input$market_cpcs_input, input$submarket_comp_input)
+    
     #filter the cpc codes
-    #bring in smaller merged data 
-    dt <- small_data
+    dt <- dt %>% filter(grepl(pattern = paste(input$market_cpcs_input, sep = "", collapse = "|"), x = dt$cpc_group, ignore.case = T))
+    
     
     ## to use when we have larger data
     #dt <- cpc %>%  filter(grepl(pattern = paste(input$market_cpcs_input, sep = "", collapse = "|", x = cpc$cpc_group,ignore.case = T))) ## change market_cpcs_input (david) to patent_codes?
@@ -152,8 +137,8 @@ server <- function(input,output,session) {
     # dt <- merge(dt, assignee, by = "patent_id")
     #probably merge in location data here too, by "location_id"
     
-
- ##### copy in other COMPETETIVE POSITIONING code ######
+    
+    ##### copy in other COMPETETIVE POSITIONING code ######
     
     # Get top 10 companies   (their # of patents)
     totals <- dt %>% 
@@ -203,112 +188,61 @@ server <- function(input,output,session) {
     totals <- totals %>% select(-`2017`,-`2021`)
     
     
-
+    
     #competition$dt <- head(dt)
     competition$dt <- totals 
     output$competition_dt <- renderDataTable({competition$dt})
     
   })    
-    
   
   
-##### TECHNOLOGY TRENDS CODE #######
+  
+  ##### TECHNOLOGY TRENDS CODE #######
   #OBSERVE EVENT -- technology trends
   observeEvent(input$generate_tech_trends, {   
     
     #selected_codes$trends <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "))
+    browser()
     selected_codes$trends <- paste("Selected patent codes:", paste(input$trends_market_cpcs_input, collapse = ", "))
-    
-    # this isn't needed for the small data
-    # keep <- small_data %>% 
-    #   mutate(patent_id = as.character(patent_id)) %>% 
-    #   #filter(grepl(pattern = selected_patent_codes, x = dt$cpc_group,ignore.case = T)) %>%
-    #   filter(grepl(pattern = selected_codes$trends, x = small_data$cpc_group,ignore.case = T)) %>% 
-    #   select(patent_id) %>%
-    #   unique()
-    
-  # #MAP 2 currently doesn't change by patent code
-    #tidy up the location data
-    # dt$state_fips <- str_pad(string = dt$state_fips,width = 2,side = 'left', pad = '0')
-    # dt$county_fips <- str_pad(string = dt$county_fips,width = 3,side = 'left', pad = '0')
-    # dt$fips <- paste(dt$state_fips,dt$county_fips,sep = '')
-    # 
-    # #second map -- currently doesn't change depending on the codes selected
-    # dt_state <- dt %>% group_by(disambig_state,state_fips) %>% summarise(n=uniqueN(patent_id))
-    # 
-    # l <- list(color = toRGB("white"), width = 2)
-    # g <- list(
-    #   scope = 'usa',
-    #   projection = list(type = 'albers usa'),
-    #   showlakes = TRUE,
-    #   lakecolor = toRGB('white')
-    # )
-    # fig <- plot_geo(dt_state, locationmode = 'USA-states')
-    # fig <- fig %>% add_trace(
-    #   z = ~n,
-    #   text = ~disambig_state,
-    #   locations = ~disambig_state,
-    #   color = ~n,
-    #   colors = 'Blues'
-    # )
-    # fig <- fig %>% colorbar(title = "Count of patents")
-    # fig <- fig %>% layout(
-    #   title = 'Cyber security patents granted by State', #change title?
-    #   geo = g
-    # )
-    # trends$plot <- fig # Added this line
-    
+    selected_subcode$trends <- paste("Select Sub Catagory:", paste(input$trends_market_cpcs_input_sub, collapse = ", "))
     
     # #S curve
-
-    segments_names <- c('segment 1','segment 2','segment 3','segment 4','segment 5')
-    segments_codes <- c('G06F21', 'H04L63', 'H04L9', 'H04W12', 'H04K1')
-
+    
+    segments_codes <- c(trends_market_cpcs_input)
+    
     # First we need to identify patents that contain machine learning methods
     # This can be done by looking at the CPC codes and/or the text
-
+    
     # cpc codes to flag
-    ml_cpcs <- c('G06N3/02','G06N3/08','G06N3/12','G06N5','G06N20','G10L15/02', 'G10L15/075', 'G10L15/08', 'G10L15/014','G10L15/16',
-                 'G10L15/18', 'G10L17/02', 'G10L17/04', 'G10L17/16', 'G10L17/18', 'G10L25/30', 'G10L25/33', 'G10L25/36', 'G10L25/39')
-
-    # keywords to flag
-    ml_keywords <- c('machine learning', 'deep learning', 'statistical learning','neural network')
-
-
+    ml_cpcs <- c(trends_market_cpcs_input_sub)
+    
+    
     dt <- small_data
     dt$ml <- ifelse(str_detect(string = dt$cpc_group, pattern = str_c(ml_cpcs, collapse = "|", ignore_case = TRUE)), 1, 0)
     table(dt$ml)
     head(dt$cpc_group)
-    dt$ml <- ifelse(grepl(pattern = paste(ml_keywords,collapse = '|',sep = ''),x = dt$patent_title,ignore.case = T),1,dt$ml)
-    dt$ml <- ifelse(grepl(pattern = paste(ml_keywords,collapse = '|',sep = ''),x = dt$patent_abstract,ignore.case = T),1,dt$ml)
     table(dt$ml)
-
+    
     # add sub categories
     dt$segment <- NA
-    for (i in 1:length(segments_names)) {
-      dt$segment <- ifelse(grepl(pattern = segments_codes[i],x = dt$cpc_group,ignore.case = T),segments_names[i],dt$segment)
+    for (i in 1:length(segments_codes)) {
+      dt$segment <- ifelse(grepl(pattern = segments_codes[i],x = dt$cpc_group,ignore.case = T),segments_codes[i],dt$segment)
     }
     dt$segment[is.na(dt$segment)] <- 'Other'
     table(dt$segment,useNA = 'ifany')
-
+    
     # Questions
     # what has adoption of machine learning looked like overall?
     temp <- dt %>% filter(ml==1) %>% group_by(year=year(patent_date)) %>% summarise(n=uniqueN(patent_id))
     temp <- temp[order(temp$year,decreasing = F),]
     fig <- plot_ly(temp, x = ~year, y = ~n, type = 'bar')
-
-
+    
+    
     trends$plot <- fig
     
     
     
-    
-    
-    
-    
   })
-
-  
   
   
   
@@ -320,7 +254,7 @@ server <- function(input,output,session) {
   output$selected_trends_patent_codes <- renderText({
     selected_codes$trends
   })
-
+  
   
   
   output$trends_plot <- renderPlotly({ 
@@ -333,4 +267,3 @@ server <- function(input,output,session) {
 
 
 shinyApp(ui, server)
-
