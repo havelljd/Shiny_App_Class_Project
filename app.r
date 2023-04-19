@@ -215,7 +215,8 @@ server <- function(input,output,session) {
     # # probably merge in location data here too, by "location_id"
     
     #selected_codes$trends <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "))
-    selected_codes$trends <- paste("Selected patent codes:", paste(input$trends_market_cpcs_input, collapse = ", "))
+    selected_codes$trends <- paste("Selected patent codes:", paste(input$trends_market_cpcs_input, collapse = ", "), paste(input$trends_sub_segments, collapse = ", "))
+    
     
     # this isn't needed for the small data
     # keep <- small_data %>% 
