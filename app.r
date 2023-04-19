@@ -28,6 +28,10 @@ small_data <- fread("~/Desktop/strat/Module3/Data/small_data.csv")
 
 dt <- small_data
 
+trends_patent_codes <- c('G06F21', 'H04L63', 'H04L9', 'H04W12', 'H04K1')
+trends_sub_segments_codes <- c('G06N3/02','G06N3/08','G06N3/12','G06N5','G06N20','G10L15/02', 'G10L15/075', 'G10L15/08', 'G10L15/014','G10L15/16',
+                               'G10L15/18', 'G10L17/02', 'G10L17/04', 'G10L17/16', 'G10L17/18', 'G10L25/30', 'G10L25/33', 'G10L25/36', 'G10L25/39')
+
 
 # ui ----------------------------------------------------------------------
 
@@ -85,8 +89,8 @@ ui <- navbarPage(
         width = 4,
         h4('Enter your search criteria:'),
         # selectInput(inputId = 'market_cpcs_input', label = 'Patent Codes:', choices = unique_patent_codes, multiple = TRUE),         textInput(inputId = 'location', label = 'Location:', value = ''),
-        selectInput(inputId = 'trends_market_cpcs_input', label = 'Patent Codes:', choices = unique_patent_codes, multiple = TRUE),
-        selectInput(inputId = 'submarket_trends_input', label = 'Sub-Patent Codes:', choices = unique_patent_codes, multiple = TRUE),
+        selectInput(inputId = 'trends_market_cpcs_input', label = 'Patent Codes:', choices = trends_patent_codes, multiple = TRUE),
+        selectInput(inputId = 'trends_sub_segments', label = 'Sub Segment:', choices = trends_sub_segments_codes, multiple = TRUE),
         actionButton(inputId = 'generate_tech_trends', label = 'Run Analysis', class = 'btn-primary')
       ),
       column(
@@ -98,8 +102,7 @@ ui <- navbarPage(
       )
     )
   )
-) 
-
+)
 
   
 
@@ -199,28 +202,86 @@ server <- function(input,output,session) {
   
   ##### TECHNOLOGY TRENDS CODE #######
   #OBSERVE EVENT -- technology trends
-  observeEvent(input$generate_tech_trends, {   
+  observeEvent(input$generate_tech_trends, { 
+    # to use when we have larger data
+    dt <- small_data
+    
+    
+    #  dt <- cpc %>% filter(grepl(pattern = paste(input$trends_market_cpcs_input, sep = "", collapse = "|"), x = cpc$cpc_group, ignore.case = TRUE))
+    # #merge with patents
+    # dt <- merge(dt, patent, by = "patent_id")
+    # #merge with assignee
+    # dt <- merge(dt, assignee, by = "patent_id")
+    # # probably merge in location data here too, by "location_id"
     
     #selected_codes$trends <- paste("Selected patent codes:", paste(input$market_cpcs_input, collapse = ", "))
-    browser()
     selected_codes$trends <- paste("Selected patent codes:", paste(input$trends_market_cpcs_input, collapse = ", "))
-    selected_subcode$trends <- paste("Select Sub Catagory:", paste(input$trends_market_cpcs_input_sub, collapse = ", "))
+    
+    # this isn't needed for the small data
+    # keep <- small_data %>% 
+    #   mutate(patent_id = as.character(patent_id)) %>% 
+    #   #filter(grepl(pattern = selected_patent_codes, x = dt$cpc_group,ignore.case = T)) %>%
+    #   filter(grepl(pattern = selected_codes$trends, x = small_data$cpc_group,ignore.case = T)) %>% 
+    #   select(patent_id) %>%
+    #   unique()
+    
+    # #MAP 2 currently doesn't change by patent code
+    #tidy up the location data
+    # dt$state_fips <- str_pad(string = dt$state_fips,width = 2,side = 'left', pad = '0')
+    # dt$county_fips <- str_pad(string = dt$county_fips,width = 3,side = 'left', pad = '0')
+    # dt$fips <- paste(dt$state_fips,dt$county_fips,sep = '')
+    # 
+    # #second map -- currently doesn't change depending on the codes selected
+    # dt_state <- dt %>% group_by(disambig_state,state_fips) %>% summarise(n=uniqueN(patent_id))
+    # 
+    # l <- list(color = toRGB("white"), width = 2)
+    # g <- list(
+    #   scope = 'usa',
+    #   projection = list(type = 'albers usa'),
+    #   showlakes = TRUE,
+    #   lakecolor = toRGB('white')
+    # )
+    # fig <- plot_geo(dt_state, locationmode = 'USA-states')
+    # fig <- fig %>% add_trace(
+    #   z = ~n,
+    #   text = ~disambig_state,
+    #   locations = ~disambig_state,
+    #   color = ~n,
+    #   colors = 'Blues'
+    # )
+    # fig <- fig %>% colorbar(title = "Count of patents")
+    # fig <- fig %>% layout(
+    #   title = 'Cyber security patents granted by State', #change title?
+    #   geo = g
+    # )
+    # trends$plot <- fig # Added this line
+    
     
     # #S curve
     
-    segments_codes <- c(trends_market_cpcs_input)
+    # segments_names <- cpc$cpc_group
+    segments_codes <- paste(input$trends_market_cpcs_input)
     
     # First we need to identify patents that contain machine learning methods
     # This can be done by looking at the CPC codes and/or the text
     
     # cpc codes to flag
-    ml_cpcs <- c(trends_market_cpcs_input_sub)
+    ml_cpcs <- paste(input$trends_sub_segments)
+    # ml_cpcs <- c('G06N3/02','G06N3/08','G06N3/12','G06N5','G06N20','G10L15/02', 'G10L15/075', 'G10L15/08', 'G10L15/014','G10L15/16',
+    #              'G10L15/18', 'G10L17/02', 'G10L17/04', 'G10L17/16', 'G10L17/18', 'G10L25/30', 'G10L25/33', 'G10L25/36', 'G10L25/39')
+    
+    # keywords to flag
+    ml_keywords <- c('machine learning', 'deep learning', 'statistical learning','neural network')
     
     
-    dt <- small_data
+    # dt$ml <- ifelse(grepl(pattern = paste(ml_cpcs,collapse = '|',sep = ''),x = dt$cpc_group,ignore.case = T),1,0)
+    # dt <- small_data
     dt$ml <- ifelse(str_detect(string = dt$cpc_group, pattern = str_c(ml_cpcs, collapse = "|", ignore_case = TRUE)), 1, 0)
     table(dt$ml)
+    
     head(dt$cpc_group)
+    dt$ml <- ifelse(grepl(pattern = paste(ml_keywords,collapse = '|',sep = ''),x = dt$patent_title,ignore.case = T),1,dt$ml)
+    dt$ml <- ifelse(grepl(pattern = paste(ml_keywords,collapse = '|',sep = ''),x = dt$patent_abstract,ignore.case = T),1,dt$ml)
     table(dt$ml)
     
     # add sub categories
@@ -240,9 +301,9 @@ server <- function(input,output,session) {
     
     trends$plot <- fig
     
-    
-    
   })
+  
+  
   
   
   
